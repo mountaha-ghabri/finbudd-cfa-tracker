@@ -48,7 +48,7 @@ class SupabaseClient {
       body: JSON.stringify({ email, password, data: { name } })
     });
     if (data.access_token) {
-      this.token = data.access_token;
+    this.token = data.access_token;
     }
     return data;
   }
@@ -59,14 +59,14 @@ class SupabaseClient {
       body: JSON.stringify({ email, password })
     });
     if (data.access_token) {
-      this.token = data.access_token;
+    this.token = data.access_token;
     }
     return data;
   }
 
   async signOut() {
     try {
-      await this.request('/auth/v1/logout', { method: 'POST' });
+    await this.request('/auth/v1/logout', { method: 'POST' });
     } catch (err) {
       console.log('Logout error:', err);
     }
@@ -113,17 +113,46 @@ const supabase = new SupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Topic configuration with burgundy theme variations
 const TOPICS = [
-  { id: 'ethics', name: 'Ethics', color: '#8B1A3D', weight: 15 },
-  { id: 'quantitative', name: 'Quantitative Methods', color: '#A02040', weight: 10 },
-  { id: 'economics', name: 'Economics', color: '#B03050', weight: 10 },
-  { id: 'fsa', name: 'Financial Statement Analysis', color: '#C04060', weight: 15 },
-  { id: 'corporate', name: 'Corporate Issuers', color: '#D05070', weight: 10 },
-  { id: 'equity', name: 'Equity Investments', color: '#E06080', weight: 11 },
-  { id: 'fixedIncome', name: 'Fixed Income', color: '#F07090', weight: 11 },
-  { id: 'derivatives', name: 'Derivatives', color: '#800020', weight: 6 },
-  { id: 'alternative', name: 'Alternative Investments', color: '#900030', weight: 6 },
-  { id: 'portfolio', name: 'Portfolio Management', color: '#A00040', weight: 6 }
+  { id: 'ethics', name: 'Ethics', color: '#8B1A3D', weight: 15, lms: 5 },
+  { id: 'quantitative', name: 'Quantitative Methods', color: '#A02040', weight: 10, lms: 8 },
+  { id: 'economics', name: 'Economics', color: '#B03050', weight: 10, lms: 6 },
+  { id: 'fsa', name: 'Financial Statement Analysis', color: '#C04060', weight: 15, lms: 7 },
+  { id: 'corporate', name: 'Corporate Issuers', color: '#D05070', weight: 10, lms: 4 },
+  { id: 'equity', name: 'Equity Investments', color: '#E06080', weight: 11, lms: 6 },
+  { id: 'fixedIncome', name: 'Fixed Income', color: '#F07090', weight: 11, lms: 6 },
+  { id: 'derivatives', name: 'Derivatives', color: '#800020', weight: 6, lms: 4 },
+  { id: 'alternative', name: 'Alternative Investments', color: '#900030', weight: 6, lms: 2 },
+  { id: 'portfolio', name: 'Portfolio Management', color: '#A00040', weight: 6, lms: 5 }
 ];
+
+// Generate Learning Modules and Learning Outcomes structure
+const generateLMStructure = (topicId, numLMs) => {
+  const structure = [];
+  for (let lm = 1; lm <= numLMs; lm++) {
+    const losCount = Math.floor(Math.random() * 8) + 5; // 5-12 LOS per LM
+    const los = [];
+    for (let losNum = 1; losNum <= losCount; losNum++) {
+      los.push({
+        id: `LM${lm}-LOS${losNum}`,
+        name: `LOS ${losNum}`,
+        lm: lm,
+        los: losNum
+      });
+    }
+    structure.push({
+      id: `LM${lm}`,
+      name: `Learning Module ${lm}`,
+      los: los
+    });
+  }
+  return structure;
+};
+
+// Pre-generate structure for all topics
+const TOPIC_STRUCTURE = {};
+TOPICS.forEach(topic => {
+  TOPIC_STRUCTURE[topic.id] = generateLMStructure(topic.id, topic.lms);
+});
 
 const CFA_TRACKER = () => {
   const [user, setUser] = useState(null);
@@ -132,9 +161,11 @@ const CFA_TRACKER = () => {
   const [students, setStudents] = useState([]);
   const [studentData, setStudentData] = useState({});
   const [selectedTopic, setSelectedTopic] = useState(null);
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' or topic id
   const [authMode, setAuthMode] = useState('signin');
   const [examDate, setExamDate] = useState('');
   const [showExamDateModal, setShowExamDateModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -156,7 +187,7 @@ const CFA_TRACKER = () => {
     try {
       const userData = await supabase.getUser();
       if (userData && userData.id) {
-        setUser(userData);
+      setUser(userData);
       }
     } catch (err) {
       console.log('Not authenticated');
@@ -261,7 +292,7 @@ const CFA_TRACKER = () => {
       if (authMode === 'signin') {
         const data = await supabase.signIn(email, password);
         if (data.user) {
-          setUser(data.user);
+        setUser(data.user);
         } else if (data.access_token) {
           // Get user info
           const userInfo = await supabase.getUser();
@@ -272,16 +303,16 @@ const CFA_TRACKER = () => {
         if (data.user) {
           // Create student record
           try {
-            await supabase.insert('students', {
-              id: data.user.id,
-              name: name,
+        await supabase.insert('students', {
+          id: data.user.id,
+          name: name,
               email: email,
               exam_date: '2025-08-20'
-            });
+        });
           } catch (err) {
             console.error('Error creating student record:', err);
           }
-          setUser(data.user);
+        setUser(data.user);
         }
       }
     } catch (err) {
@@ -330,10 +361,10 @@ const CFA_TRACKER = () => {
       );
       
       if (existing && existing.length > 0) {
-        await supabase.update('student_progress', {
-          avg_score: avgScore,
-          quiz_coverage: quizCoverage
-        }, `student_id=eq.${studentId}&topic_id=eq.${topicId}`);
+      await supabase.update('student_progress', {
+        avg_score: avgScore,
+        quiz_coverage: quizCoverage
+      }, `student_id=eq.${studentId}&topic_id=eq.${topicId}`);
       } else {
         await supabase.insert('student_progress', {
           student_id: studentId,
@@ -514,334 +545,463 @@ const CFA_TRACKER = () => {
     const overall = calculateOverallProgress(data);
     const daysRemaining = calculateDaysRemaining();
 
-    const chartData = TOPICS.map(topic => ({
-      name: topic.name.split(' ')[0],
-      'Quiz Coverage': data[topic.id]?.quizCoverage || 0,
-      'Avg Score': data[topic.id]?.avgScore || 0,
-      'Video Coverage': data[topic.id]?.videoCoverage || 0
-    }));
+    // Get LOS-level data for selected topic
+    const getLOSData = (topicId) => {
+      const structure = TOPIC_STRUCTURE[topicId] || [];
+      const topicQuizzes = data[topicId]?.quizzes || {};
+      
+      return structure.flatMap(lm => 
+        lm.los.map(los => {
+          const quizId = los.id;
+          const attempts = topicQuizzes[quizId] || [];
+          const lastScore = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+          const avgScore = attempts.length > 0 
+            ? attempts.reduce((sum, s) => sum + s, 0) / attempts.length 
+            : 0;
+          
+          return {
+            ...los,
+            lmName: lm.name,
+            attempts: attempts.length,
+            lastScore,
+            avgScore,
+            completed: attempts.length > 0
+          };
+        })
+      );
+    };
 
-    const pieData = [
-      { name: 'Completed', value: overall.quizCoverage, color: '#228B22' },
-      { name: 'Remaining', value: 100 - overall.quizCoverage, color: '#DC143C' }
-    ];
+    const updateLOSVideoCoverage = async (topicId, losId, coverage) => {
+      // For now, we'll update at topic level, but this can be extended to LOS level
+      await updateVideoCoverage(user.id, topicId, coverage);
+    };
+
+    const addLOSQuizScore = async (topicId, losId, score) => {
+      await addQuizScore(user.id, topicId, losId, score);
+    };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#2D0A1A] via-[#4A0F2E] to-[#2D0A1A] p-6">
-        <div className="max-w-7xl mx-auto mb-8">
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-2xl p-6 border border-white/20">
-            <div className="flex justify-between items-start flex-wrap gap-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#2D0A1A] via-[#4A0F2E] to-[#2D0A1A] flex">
+        {/* Side Navigation */}
+        <div className={`${sidebarOpen ? 'w-64' : 'w-16'} backdrop-blur-xl bg-white/10 border-r border-white/20 transition-all duration-300 flex flex-col`}>
+          <div className="p-4 border-b border-white/20 flex items-center justify-between">
+            <h2 className={`text-xl font-bold text-white ${!sidebarOpen && 'hidden'}`}>Courses</h2>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-white/70 hover:text-white"
+            >
+              {sidebarOpen ? '◀' : '▶'}
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            <button
+              onClick={() => setActiveView('dashboard')}
+              className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors ${
+                activeView === 'dashboard' ? 'bg-[#8B1A3D]/50 border-l-4 border-[#8B1A3D]' : ''
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <BarChart3 className="w-5 h-5 text-white flex-shrink-0" />
+                {sidebarOpen && <span className="text-white font-semibold">Dashboard</span>}
+              </div>
+            </button>
+            
+            {TOPICS.map(topic => {
+              const topicData = data[topic.id] || {};
+              const completed = (topicData.quizCoverage || 0) > 0;
+              return (
+                <button
+                  key={topic.id}
+                  onClick={() => setActiveView(topic.id)}
+                  className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors relative ${
+                    activeView === topic.id ? 'bg-[#8B1A3D]/50 border-l-4' : ''
+                  }`}
+                  style={{ borderLeftColor: activeView === topic.id ? topic.color : 'transparent' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: topic.color }}
+                    />
+                    {sidebarOpen && (
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-semibold text-sm truncate">{topic.name}</div>
+                        <div className="text-white/60 text-xs">
+                          {topicData.quizCoverage?.toFixed(0) || 0}% • {topicData.avgScore?.toFixed(0) || 0}%
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto">
+          {activeView === 'dashboard' ? (
+            <div className="p-6">
+              {/* Header */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-2xl p-6 mb-6 border border-white/20">
+                <div className="flex justify-between items-start flex-wrap gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-2">
+                    <h1 className="text-3xl font-bold text-white mb-2">
                   Welcome, {user.user_metadata?.name || user.email}
                 </h1>
-                <p className="text-[#FFB6C1]">CFA Level 1 Study Progress</p>
+                    <p className="text-[#FFB6C1]">CFA Level 1 Study Progress Dashboard</p>
               </div>
               <div className="text-right">
-                <div className="flex items-center gap-2 text-[#FFB6C1] font-semibold mb-2">
+                    <div className="flex items-center gap-2 text-[#FFB6C1] font-semibold mb-2">
                   <Calendar className="w-5 h-5" />
                   <span>{daysRemaining} days remaining</span>
                 </div>
-                <div className="text-sm text-white/70">
-                  Exam: {examDate ? new Date(examDate).toLocaleDateString() : 'Not set'}
-                </div>
-                <button
-                  onClick={() => setShowExamDateModal(true)}
-                  className="mt-2 text-xs text-[#FFB6C1] hover:text-white underline"
-                >
-                  Change Exam Date
-                </button>
+                    <div className="text-sm text-white/70">
+                      Exam: {examDate ? new Date(examDate).toLocaleDateString() : 'Not set'}
               </div>
+                    <button
+                      onClick={() => setShowExamDateModal(true)}
+                      className="mt-2 text-xs text-[#FFB6C1] hover:text-white underline"
+                    >
+                      Change Exam Date
+                    </button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
+              {/* KPI Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white/90">Quiz Coverage</h3>
-              <CheckCircle className="w-6 h-6 text-[#228B22]" />
+                    <h3 className="text-lg font-semibold text-white/90">Quiz Coverage</h3>
+                    <CheckCircle className="w-6 h-6 text-[#228B22]" />
             </div>
-            <div className="text-4xl font-bold text-white mb-2">
+                  <div className="text-4xl font-bold text-white mb-2">
               {overall.quizCoverage.toFixed(1)}%
             </div>
-            <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-              <div 
-                className="h-2 rounded-full transition-all"
-                style={{ 
-                  width: `${overall.quizCoverage}%`,
-                  backgroundColor: getColorForScore(overall.quizCoverage)
-                }}
-              />
+                  <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                    <div 
+                      className="h-2 rounded-full transition-all"
+                      style={{ 
+                        width: `${overall.quizCoverage}%`,
+                        backgroundColor: getColorForScore(overall.quizCoverage)
+                      }}
+                    />
             </div>
           </div>
 
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white/90">Average Score</h3>
-              <TrendingUp className="w-6 h-6 text-[#228B22]" />
+                    <h3 className="text-lg font-semibold text-white/90">Average Score</h3>
+                    <TrendingUp className="w-6 h-6 text-[#228B22]" />
             </div>
-            <div className="text-4xl font-bold text-white mb-2">
+                  <div className="text-4xl font-bold text-white mb-2">
               {overall.avgScore.toFixed(1)}%
             </div>
-            <div className="text-sm text-white/70">Weighted: {overall.weightedScore.toFixed(1)}%</div>
+                  <div className="text-sm text-white/70">Weighted: {overall.weightedScore.toFixed(1)}%</div>
           </div>
 
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white/90">Video Coverage</h3>
-              <BookOpen className="w-6 h-6 text-[#8B1A3D]" />
+                    <h3 className="text-lg font-semibold text-white/90">Video Coverage</h3>
+                    <BookOpen className="w-6 h-6 text-[#8B1A3D]" />
             </div>
-            <div className="text-4xl font-bold text-white mb-2">
-              {overall.videoCoverage.toFixed(1)}%
-            </div>
-            <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-              <div 
-                className="h-2 rounded-full transition-all"
-                style={{ 
-                  width: `${overall.videoCoverage}%`,
-                  backgroundColor: '#8B1A3D'
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white/90">Overall Progress</h3>
-              <Target className="w-6 h-6 text-[#FFB6C1]" />
-            </div>
-            <div className="text-4xl font-bold text-white mb-2">
-              {((overall.quizCoverage + overall.videoCoverage) / 2).toFixed(1)}%
-            </div>
-            <div className="text-sm text-white/70">Combined metric</div>
+                  <div className="text-4xl font-bold text-white mb-2">
+                    {overall.videoCoverage.toFixed(1)}%
+                  </div>
+                  <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                    <div 
+                      className="h-2 rounded-full transition-all"
+                      style={{ 
+                        width: `${overall.videoCoverage}%`,
+                        backgroundColor: '#8B1A3D'
+                      }}
+                    />
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 mb-8 border border-white/20">
-          <h3 className="text-xl font-bold text-white mb-6">Progress by Topic</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="name" stroke="#FFB6C1" />
-              <YAxis stroke="#FFB6C1" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'rgba(45, 10, 26, 0.9)', 
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '8px',
-                  color: '#fff'
-                }} 
-              />
-              <Legend />
-              <Bar dataKey="Quiz Coverage" fill="#8B1A3D" />
-              <Bar dataKey="Avg Score" fill="#228B22" />
-              <Bar dataKey="Video Coverage" fill="#A02040" />
-            </BarChart>
-          </ResponsiveContainer>
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white/90">Overall Progress</h3>
+                    <Target className="w-6 h-6 text-[#FFB6C1]" />
+                  </div>
+                  <div className="text-4xl font-bold text-white mb-2">
+                    {((overall.quizCoverage + overall.videoCoverage) / 2).toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-white/70">Combined metric</div>
+                </div>
         </div>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* All Courses Summary Table */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
+                <h2 className="text-2xl font-bold text-white mb-6">All Courses - KPI Summary</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/20">
+                        <th className="text-left py-3 px-4 text-white font-semibold">Course</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Weight</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Quiz Coverage</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Avg Score</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Video Coverage</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Overall</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
           {TOPICS.map(topic => {
             const topicData = data[topic.id] || { videoCoverage: 0, quizCoverage: 0, avgScore: 0 };
+                        const overallProgress = (topicData.quizCoverage + topicData.videoCoverage) / 2;
             return (
-              <div 
+                          <tr 
                 key={topic.id}
-                className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20 hover:bg-white/15 transition-all cursor-pointer"
-                style={{ borderLeftColor: topic.color, borderLeftWidth: '4px' }}
-                onClick={() => setSelectedTopic(topic.id)}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-bold text-white">{topic.name}</h3>
-                  <span className="text-xs text-white/70 bg-white/10 px-2 py-1 rounded">
-                    {topic.weight}%
-                  </span>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white/70">Quiz Coverage</span>
-                      <span className="font-semibold text-white">{topicData.quizCoverage.toFixed(0)}%</span>
+                            className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
+                            onClick={() => setActiveView(topic.id)}
+                          >
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: topic.color }}
+                                />
+                                <span className="text-white font-semibold">{topic.name}</span>
                     </div>
-                    <div className="w-full bg-white/20 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full transition-all"
+                            </td>
+                            <td className="py-3 px-4 text-center text-white">{topic.weight}%</td>
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="w-24 bg-white/20 rounded-full h-2">
+                                  <div 
+                                    className="h-2 rounded-full"
                         style={{ 
                           width: `${topicData.quizCoverage}%`,
                           backgroundColor: getColorForScore(topicData.quizCoverage)
                         }}
                       />
                     </div>
+                                <span className="text-white text-sm font-semibold w-12 text-right">
+                                  {topicData.quizCoverage.toFixed(1)}%
+                                </span>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white/70">Average Score</span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
                       <span 
-                        className="font-semibold text-lg"
+                                className="text-lg font-bold"
                         style={{ color: getColorForScore(topicData.avgScore) }}
                       >
-                        {topicData.avgScore.toFixed(0)}%
+                                {topicData.avgScore.toFixed(1)}%
                       </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="w-24 bg-white/20 rounded-full h-2">
+                                  <div 
+                                    className="h-2 rounded-full"
+                                    style={{ 
+                                      width: `${topicData.videoCoverage}%`,
+                                      backgroundColor: topic.color
+                                    }}
+                                  />
                     </div>
+                                <span className="text-white text-sm font-semibold w-12 text-right">
+                                  {topicData.videoCoverage.toFixed(1)}%
+                                </span>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white/70">Video Coverage</span>
-                      <span className="font-semibold text-white">{topicData.videoCoverage.toFixed(0)}%</span>
-                    </div>
-                    <div className="w-full bg-white/20 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full transition-all"
-                        style={{ 
-                          width: `${topicData.videoCoverage}%`,
-                          backgroundColor: topic.color
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="text-white font-semibold">
+                                {overallProgress.toFixed(1)}%
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span 
+                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                  overallProgress >= 70 
+                                    ? 'bg-green-500/20 text-green-300' 
+                                    : overallProgress >= 50
+                                    ? 'bg-yellow-500/20 text-yellow-300'
+                                    : 'bg-red-500/20 text-red-300'
+                                }`}
+                              >
+                                {overallProgress >= 70 ? 'On Track' : overallProgress >= 50 ? 'Needs Work' : 'At Risk'}
+                              </span>
+                            </td>
+                          </tr>
             );
           })}
+                    </tbody>
+                  </table>
         </div>
-
-        {selectedTopic && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="backdrop-blur-xl bg-[#2D0A1A]/95 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
-              <div className="p-6 border-b border-white/20 sticky top-0 bg-[#2D0A1A]/95 backdrop-blur-xl">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-white">
-                    {TOPICS.find(t => t.id === selectedTopic)?.name}
-                  </h2>
+              </div>
+            </div>
+      ) : (
+        // Course Detail View with LM/LOS Table
+        (() => {
+          const topic = TOPICS.find(t => t.id === activeView);
+          if (!topic) return null;
+          
+          const losData = getLOSData(activeView);
+          const topicData = data[activeView] || {};
+          
+          return (
+            <div className="p-6">
+              {/* Course Header */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-2xl p-6 mb-6 border border-white/20" style={{ borderLeftColor: topic.color, borderLeftWidth: '4px' }}>
+                <div className="flex justify-between items-start flex-wrap gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">{topic.name}</h1>
+                    <p className="text-[#FFB6C1]">Weight: {topic.weight}% • Exam Coverage</p>
+                  </div>
                   <button 
-                    onClick={() => setSelectedTopic(null)}
-                    className="text-white/70 hover:text-white text-2xl"
+                    onClick={() => setActiveView('dashboard')}
+                    className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
                   >
-                    ×
+                    ← Back to Dashboard
                   </button>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 mt-6">
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <div className="text-sm text-white/70 mb-1">Quiz Coverage</div>
+                    <div className="text-2xl font-bold text-white">{topicData.quizCoverage?.toFixed(1) || 0}%</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <div className="text-sm text-white/70 mb-1">Average Score</div>
+                    <div className="text-2xl font-bold" style={{ color: getColorForScore(topicData.avgScore || 0) }}>
+                      {topicData.avgScore?.toFixed(1) || 0}%
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <div className="text-sm text-white/70 mb-1">Video Coverage</div>
+                    <div className="text-2xl font-bold text-white">{topicData.videoCoverage?.toFixed(1) || 0}%</div>
+                  </div>
                 </div>
               </div>
               
-              <div className="p-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Update Video Coverage</h3>
-                  <div className="flex gap-3">
-                    <input
-                      type="number"
-                      placeholder="Coverage %"
-                      min="0"
-                      max="100"
-                      className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                      id="videoCoverage"
-                    />
-                    <button
-                      onClick={() => {
-                        const coverage = parseFloat(document.getElementById('videoCoverage').value);
-                        if (coverage >= 0 && coverage <= 100) {
-                          updateVideoCoverage(user.id, selectedTopic, coverage);
-                          document.getElementById('videoCoverage').value = '';
-                        }
-                      }}
-                      className="px-6 py-2 bg-[#8B1A3D] text-white rounded-lg hover:bg-[#A02040] transition-all"
-                    >
-                      Update
-                    </button>
-                  </div>
+              {/* LM/LOS Table */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
+                <h2 className="text-2xl font-bold text-white mb-6">Learning Modules & Outcomes</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/20">
+                        <th className="text-left py-3 px-4 text-white font-semibold">LM</th>
+                        <th className="text-left py-3 px-4 text-white font-semibold">LOS</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Quiz ID</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Attempts</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Last Score</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Avg Score</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Video %</th>
+                        <th className="text-center py-3 px-4 text-white font-semibold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {losData.map((los, idx) => (
+                        <tr key={los.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                          <td className="py-3 px-4 text-white">{los.lmName}</td>
+                          <td className="py-3 px-4 text-white">{los.name}</td>
+                          <td className="py-3 px-4 text-center text-white/70 font-mono text-sm">{los.id}</td>
+                          <td className="py-3 px-4 text-center text-white">{los.attempts}</td>
+                          <td className="py-3 px-4 text-center">
+                            {los.lastScore !== null ? (
+                              <span 
+                                className="font-bold"
+                                style={{ color: getColorForScore(los.lastScore) }}
+                              >
+                                {los.lastScore}%
+                              </span>
+                            ) : (
+                              <span className="text-white/50">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {los.avgScore > 0 ? (
+                              <span 
+                                className="font-semibold"
+                                style={{ color: getColorForScore(los.avgScore) }}
+                              >
+                                {los.avgScore.toFixed(1)}%
+                              </span>
+                            ) : (
+                              <span className="text-white/50">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                  <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              placeholder="0"
+                              className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center text-sm"
+                              defaultValue={0}
+                              onBlur={(e) => {
+                                const val = parseFloat(e.target.value);
+                                if (!isNaN(val) && val >= 0 && val <= 100) {
+                                  updateLOSVideoCoverage(activeView, los.id, val);
+                                }
+                              }}
+                            />
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex gap-2 justify-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                                placeholder="Score"
+                                className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center text-sm"
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const score = parseFloat(e.target.value);
+                                    if (!isNaN(score) && score >= 0 && score <= 100) {
+                                      addLOSQuizScore(activeView, los.id, score);
+                                      e.target.value = '';
+                                    }
+                                  }
+                                }}
+                              />
                 </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Add Quiz Score</h3>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      placeholder="Quiz ID (e.g., LM1-LOS1)"
-                      className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                      id="quizId"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Score %"
-                      min="0"
-                      max="100"
-                      className="w-24 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                      id="quizScore"
-                    />
-                    <button
-                      onClick={() => {
-                        const quizId = document.getElementById('quizId').value;
-                        const score = parseFloat(document.getElementById('quizScore').value);
-                        if (quizId && score >= 0 && score <= 100) {
-                          addQuizScore(user.id, selectedTopic, quizId, score);
-                          document.getElementById('quizId').value = '';
-                          document.getElementById('quizScore').value = '';
-                        }
-                      }}
-                      className="px-6 py-2 bg-[#8B1A3D] text-white rounded-lg hover:bg-[#A02040] transition-all"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">Quiz History</h3>
-                  <div className="space-y-2">
-                    {Object.entries(studentData[user.id]?.[selectedTopic]?.quizzes || {}).map(([quizId, attempts]) => (
-                      <div key={quizId} className="p-3 bg-white/5 rounded-lg border border-white/10">
-                        <div className="font-semibold text-white mb-2">{quizId}</div>
-                        <div className="flex gap-2 flex-wrap">
-                          {attempts.map((score, idx) => (
-                            <span 
-                              key={idx}
-                              className="px-3 py-1 rounded-full text-sm font-semibold text-white"
-                              style={{ backgroundColor: getColorForScore(score) }}
-                            >
-                              Attempt {idx + 1}: {score}%
-                            </span>
-                          ))}
-                        </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                       </div>
-                    ))}
-                    {Object.keys(studentData[user.id]?.[selectedTopic]?.quizzes || {}).length === 0 && (
-                      <p className="text-white/50 text-center py-4">No quiz attempts yet</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+                    </div>
             </div>
-          </div>
-        )}
+          );
+        })()
+      )}
 
-        {showExamDateModal && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="backdrop-blur-xl bg-[#2D0A1A]/95 rounded-2xl shadow-2xl p-6 max-w-md w-full border border-white/20">
-              <h3 className="text-xl font-bold text-white mb-4">Set Exam Date</h3>
-              <input
-                type="date"
-                value={examDate}
-                onChange={(e) => setExamDate(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white mb-4"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={saveExamDate}
-                  className="flex-1 px-6 py-2 bg-[#8B1A3D] text-white rounded-lg hover:bg-[#A02040] transition-all"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setShowExamDateModal(false)}
-                  className="flex-1 px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
-                >
-                  Cancel
-                </button>
+          {showExamDateModal && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="backdrop-blur-xl bg-[#2D0A1A]/95 rounded-2xl shadow-2xl p-6 max-w-md w-full border border-white/20">
+                <h3 className="text-xl font-bold text-white mb-4">Set Exam Date</h3>
+                <input
+                  type="date"
+                  value={examDate}
+                  onChange={(e) => setExamDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white mb-4"
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={saveExamDate}
+                    className="flex-1 px-6 py-2 bg-[#8B1A3D] text-white rounded-lg hover:bg-[#A02040] transition-all"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setShowExamDateModal(false)}
+                    className="flex-1 px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
+                  >
+                    Cancel
+                  </button>
               </div>
             </div>
           </div>
         )}
+        </div>
       </div>
     );
   };
@@ -899,14 +1059,14 @@ const CFA_TRACKER = () => {
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
               <h3 className="text-lg font-semibold text-white/90 mb-2">Avg Score</h3>
               <div className="text-4xl font-bold text-[#228B22]">{avgScore.toFixed(1)}%</div>
-            </div>
+          </div>
 
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
               <h3 className="text-lg font-semibold text-white/90 mb-2">Avg Video Coverage</h3>
               <div className="text-4xl font-bold text-[#8B1A3D]">{avgVideoCoverage.toFixed(1)}%</div>
-            </div>
-          </div>
-
+                    </div>
+                  </div>
+                  
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl p-6 border border-white/20">
             <h2 className="text-2xl font-bold text-white mb-6">Student Progress - KPI Table</h2>
             <div className="overflow-x-auto">
@@ -933,16 +1093,16 @@ const CFA_TRACKER = () => {
                           <div className="w-24 bg-white/20 rounded-full h-2">
                             <div 
                               className="h-2 rounded-full"
-                              style={{ 
-                                width: `${student.quizCoverage}%`,
-                                backgroundColor: getColorForScore(student.quizCoverage)
-                              }}
-                            />
-                          </div>
+                            style={{ 
+                              width: `${student.quizCoverage}%`,
+                              backgroundColor: getColorForScore(student.quizCoverage)
+                            }}
+                          />
+                        </div>
                           <span className="text-white text-sm font-semibold w-12 text-right">
                             {student.quizCoverage.toFixed(1)}%
                           </span>
-                        </div>
+                      </div>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span 
@@ -964,16 +1124,16 @@ const CFA_TRACKER = () => {
                           <div className="w-24 bg-white/20 rounded-full h-2">
                             <div 
                               className="h-2 rounded-full"
-                              style={{ 
+                            style={{ 
                                 width: `${student.videoCoverage}%`,
                                 backgroundColor: '#8B1A3D'
-                              }}
-                            />
-                          </div>
+                            }}
+                          />
+                        </div>
                           <span className="text-white text-sm font-semibold w-12 text-right">
                             {student.videoCoverage.toFixed(1)}%
                           </span>
-                        </div>
+                      </div>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="text-white font-semibold">
@@ -994,8 +1154,8 @@ const CFA_TRACKER = () => {
                         </span>
                       </td>
                     </tr>
-                  ))}
-                  {students.length === 0 && (
+              ))}
+              {students.length === 0 && (
                     <tr>
                       <td colSpan="8" className="py-8 text-center text-white/50">
                         No students registered yet
